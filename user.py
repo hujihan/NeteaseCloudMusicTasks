@@ -171,9 +171,10 @@ class User(object):
 
         if self.vipType == 11:
             vip_resp = self.music.vip_level()
-            self.taskInfo('VIP等级', vip_resp['data']['redVipLevel'])
-            self.taskInfo('到期时间', time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime(vip_resp['data']['musicPackage']['expireTime']/1000)))
+            if 'data' in vip_resp:
+                self.taskInfo('VIP等级', vip_resp['data']['redVipLevel'])
+                self.taskInfo('到期时间', time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(vip_resp['data']['musicPackage']['expireTime']/1000)))
 
         self.taskInfo('云贝数量', resp['userPoint']['balance'])
 
@@ -189,14 +190,21 @@ class User(object):
         self.taskInfo('歌单总收藏数', resp['profile']['playlistBeSubscribedCount'])
 
         resp = self.music.user_level()
-        self.full = resp['full']
-        if not self.full:
-            self.taskInfo('距离下级还需播放', str(
-                resp['data']['nextPlayCount'] - resp['data']['nowPlayCount']) + '首歌')
-            self.taskInfo('距离下级还需登录', str(
-                resp['data']['nextLoginCount'] - resp['data']['nowLoginCount']) + '天')
-            if resp['data']['nowPlayCount'] >= 20000:
-                self.songFull = True
+        if 'full' in resp:
+            self.full = resp['full']
+        else:
+            if 'data' in resp and 'level' in resp['data']:
+                self.full = (resp['data']['level'] == 10)
+            else:
+                print('获取用户等级失败:' + str(resp))
+        if 'data' in resp:
+            if not self.full:
+                self.taskInfo('距离下级还需播放', str(
+                    resp['data']['nextPlayCount'] - resp['data']['nowPlayCount']) + '首歌')
+                self.taskInfo('距离下级还需登录', str(
+                    resp['data']['nextLoginCount'] - resp['data']['nowLoginCount']) + '天')
+                if resp['data']['nowPlayCount'] >= 20000:
+                    self.songFull = True
         self.finishTask()
 
     def resize(self, total):
